@@ -36,7 +36,8 @@
         "show_paused": true
     },
     "imgbb": {
-        "api_token": "asdjdjdg394209fdjs093"
+        "api_token": "asdjdjdg394209fdjs093",
+        "expiration": 432000
     },
     "images": {
         "enable_images": true,

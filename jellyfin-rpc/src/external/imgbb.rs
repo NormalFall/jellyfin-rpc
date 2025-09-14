@@ -1,9 +1,12 @@
 use std::{
+    cmp::Ordering,
     fs::{self, File, OpenOptions},
     io::{Error, ErrorKind, Write},
     path::Path,
+    time::{Duration, SystemTime, UNIX_EPOCH}
 };
 
+use log::debug;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -13,14 +16,20 @@ use crate::{Client, JfResult};
 struct ImageUrl {
     id: String,
     url: String,
+    expiration_unix: usize,
 }
 
 impl ImageUrl {
-    fn new<T: Into<String>, Y: Into<String>>(id: T, url: Y) -> Self {
+    fn new<T: Into<String>, Y: Into<String>, Z: Into<usize>>(id: T, url: Y, expiration: Z) -> Self {
         Self {
             id: id.into(),
             url: url.into(),
+            expiration_unix: expiration.into()
         }
+    }
+
+    fn expiration_as_duration(&self) -> Duration {
+        Duration::from_secs(self.expiration_unix as u64)
     }
 }
 
@@ -37,33 +46,46 @@ pub struct ImageData {
 
 pub fn get_image(client: &Client) -> JfResult<Url> {
     let mut image_urls = read_file(client)?;
+    let system_time = SystemTime::now();
+    let current_unix = system_time.duration_since(UNIX_EPOCH)?;
 
-    if let Some(image_url) = image_urls
+    if let Some((index, image_url)) = image_urls
         .iter()
-        .find(|image_url| client.session.as_ref().unwrap().item_id == image_url.id)
+        .enumerate()
+        .find(|(_, image_url)| client.session.as_ref().unwrap().item_id == image_url.id)
     {
-        Ok(Url::parse(&image_url.url)?)
-    } else {
-        let imgbb_url = upload(client)?;
+        let expiration_unix = image_url.expiration_as_duration();
 
-        let image_url = ImageUrl::new(
-            &client.session.as_ref().unwrap().item_id,
-            imgbb_url.as_str(),
-        );
-
-        image_urls.push(image_url);
-
-        let mut file = OpenOptions::new()
-            .write(true)
-            .truncate(true)
-            .open(&client.imgbb_options.urls_location)?;
-
-        file.write_all(serde_json::to_string(&image_urls)?.as_bytes())?;
-
-        let _ = file.flush();
-
-        Ok(imgbb_url)
+        match expiration_unix.cmp(&current_unix) {
+            Ordering::Less => {
+                debug!("URL {} is expired, removing it.", image_url.id);
+                image_urls.remove(index);
+            },
+            _ => return Ok(Url::parse(&image_url.url)?)
+        }
     }
+
+    let imgbb_url = upload(client)?;
+    let imgbb_expiration = current_unix.as_secs() as usize + client.imgbb_options.expiration;
+
+    let image_url = ImageUrl::new(
+        &client.session.as_ref().unwrap().item_id,
+        imgbb_url.as_str(),
+        imgbb_expiration
+    );
+
+    image_urls.push(image_url);
+
+    let mut file = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(&client.imgbb_options.urls_location)?;
+
+    file.write_all(serde_json::to_string(&image_urls)?.as_bytes())?;
+
+    let _ = file.flush();
+
+    Ok(imgbb_url)
 }
 
 fn read_file(client: &Client) -> JfResult<Vec<ImageUrl>> {
@@ -103,7 +125,7 @@ fn upload(client: &Client) -> JfResult<Url> {
         .file_name("test.jpg"));
 
     let res: ImgBBResponse = imgbb_client
-        .post(format!("https://api.imgbb.com/1/upload?expiration=600&key={}", client.imgbb_options.api_token))
+        .post(format!("https://api.imgbb.com/1/upload?expiration={}&key={}", client.imgbb_options.expiration, client.imgbb_options.api_token))
         .multipart(form)
         .send()?
         .json()?;

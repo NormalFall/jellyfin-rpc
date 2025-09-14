@@ -149,6 +149,8 @@ pub struct DiscordBuilder {
 pub struct ImgBB {
     /// Contains the api token used to upload images to imgbb.
     pub api_token: Option<String>,
+    /// Set the expiration before the image is deleted(in seconds)
+    pub expiration: Option<usize>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -330,11 +332,14 @@ impl ConfigBuilder {
         }
 
         let api_token;
+        let expiration;
 
         if let Some(imgbb) = self.imgbb {
             api_token = imgbb.api_token;
+            expiration = imgbb.expiration;
         } else {
-            api_token = None
+            api_token = None;
+            expiration = None;
         }
 
         let enable_images;
@@ -387,7 +392,10 @@ impl ConfigBuilder {
                 buttons,
                 show_paused,
             },
-            imgbb: ImgBB { api_token },
+            imgbb: ImgBB {
+                api_token,
+                expiration
+            },
             images: Images {
                 enable_images,
                 imgbb_images,

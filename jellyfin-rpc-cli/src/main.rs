@@ -165,6 +165,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         debug!("Found config.imgbb.api_token");
         builder.imgbb_api_token(api_token);
     }
+    
+    if let Some(expiration) = conf.imgbb.expiration {
+        debug!("Found config.imgbb.expiration");
+        builder.imgbb_image_expiration(expiration);
+    }
 
     debug!("Building client");
     let mut client = builder.build()?;

@@ -895,6 +895,7 @@ impl Blacklist {
 struct ImgBBOptions {
     enabled: bool,
     api_token: String,
+    expiration: usize,
     urls_location: String,
 }
 
@@ -922,6 +923,7 @@ pub struct ClientBuilder {
     show_images: bool,
     use_imgbb: bool,
     imgbb_api_token: String,
+    imgbb_image_expiration: usize,
     imgbb_urls_file_location: String,
     large_image_text: String,
 }
@@ -942,6 +944,7 @@ impl ClientBuilder {
                 simple: false,
             }),
             show_paused: true,
+            imgbb_image_expiration: 432000, // 5 days
             ..Default::default()
         }
     }
@@ -1122,6 +1125,14 @@ impl ClientBuilder {
         self
     }
 
+    /// ImgBB expiration time set within the API
+    /// 
+    /// Default is 432000 or 5 days
+    pub fn imgbb_image_expiration<T: Into<usize>>(&mut self, expiration: T) -> &mut Self {
+        self.imgbb_image_expiration = expiration.into();
+        self
+    }
+
     /// Where to store the URLs to images uploaded to imgbb.
     /// Having this cache lets you avoid uploading the same image several times to their service.
     ///
@@ -1202,6 +1213,7 @@ impl ClientBuilder {
             imgbb_options: ImgBBOptions {
                 enabled: self.use_imgbb,
                 api_token: self.imgbb_api_token,
+                expiration: self.imgbb_image_expiration,
                 urls_location: self.imgbb_urls_file_location,
             },
             large_image_text: self.large_image_text,
