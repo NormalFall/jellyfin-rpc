@@ -37,7 +37,7 @@ pub struct Client {
     blacklist: Blacklist,
     show_paused: bool,
     show_images: bool,
-    imgur_options: ImgurOptions,
+    imgbb_options: ImgBBOptions,
     large_image_text: String,
 }
 
@@ -132,11 +132,11 @@ impl Client {
 
             if session.now_playing_item.media_type == MediaType::LiveTv {
                 image_url = Url::from_str("https://i.imgur.com/XxdHOqm.png")?;
-            } else if self.imgur_options.enabled && self.show_images {
-                if let Ok(imgur_url) = external::imgur::get_image(self) {
-                    image_url = imgur_url;
+            } else if self.imgbb_options.enabled && self.show_images {
+                if let Ok(imgbb_url) = external::imgbb::get_image(self) {
+                    image_url = imgbb_url;
                 } else {
-                    debug!("imgur::get_image() didnt return an image, using default..")
+                    debug!("imgbb::get_image() didnt return an image, using default..")
                 }
             } else if self.show_images {
                 if let Ok(iu) = self.get_image() {
@@ -892,9 +892,9 @@ impl Blacklist {
     }
 }
 
-struct ImgurOptions {
+struct ImgBBOptions {
     enabled: bool,
-    client_id: String,
+    api_token: String,
     urls_location: String,
 }
 
@@ -902,7 +902,7 @@ struct ImgurOptions {
 #[derive(Default)]
 pub struct ClientBuilder {
     url: String,
-    client_id: String,
+    api_token: String,
     api_key: String,
     self_signed: bool,
     usernames: Vec<String>,
@@ -920,9 +920,9 @@ pub struct ClientBuilder {
     blacklist_libraries: Vec<String>,
     show_paused: bool,
     show_images: bool,
-    use_imgur: bool,
-    imgur_client_id: String,
-    imgur_urls_file_location: String,
+    use_imgbb: bool,
+    imgbb_api_token: String,
+    imgbb_urls_file_location: String,
     large_image_text: String,
 }
 
@@ -930,7 +930,7 @@ impl ClientBuilder {
     /// Returns a ClientBuilder with some default options set
     pub fn new() -> Self {
         Self {
-            client_id: "1053747938519679018".to_string(),
+            api_token: "1053747938519679018".to_string(),
             music_separator: "-".to_string(),
             music_display: DisplayFormat::from(vec!["genres".to_string()]),
             movies_separator: "-".to_string(),
@@ -957,8 +957,8 @@ impl ClientBuilder {
     /// Discord Application ID that the client will use when connecting to Discord.
     ///
     /// Defaults to `"1053747938519679018"`.
-    pub fn client_id<T: Into<String>>(&mut self, client_id: T) -> &mut Self {
-        self.client_id = client_id.into();
+    pub fn api_token<T: Into<String>>(&mut self, api_token: T) -> &mut Self {
+        self.api_token = api_token.into();
         self
     }
 
@@ -1106,23 +1106,23 @@ impl ClientBuilder {
         self
     }
 
-    /// Use imgur for images, uploads images from jellyfin to imgur and stores the imgur links in a local cache
+    /// Use imgbb for images, uploads images from jellyfin to imgbb and stores the imgbb links in a local cache
     ///
     /// Defaults to `false`.
-    pub fn use_imgur(&mut self, val: bool) -> &mut Self {
-        self.use_imgur = val;
+    pub fn use_imgbb(&mut self, val: bool) -> &mut Self {
+        self.use_imgbb = val;
         self
     }
 
-    /// Imgur client id, used to upload images through their API.
+    /// ImgBB api token, used to upload images through their API.
     ///
     /// Empty by default.
-    pub fn imgur_client_id<T: Into<String>>(&mut self, client_id: T) -> &mut Self {
-        self.imgur_client_id = client_id.into();
+    pub fn imgbb_api_token<T: Into<String>>(&mut self, api_token: T) -> &mut Self {
+        self.imgbb_api_token = api_token.into();
         self
     }
 
-    /// Where to store the URLs to images uploaded to imgur.
+    /// Where to store the URLs to images uploaded to imgbb.
     /// Having this cache lets you avoid uploading the same image several times to their service.
     ///
     /// Empty by default.
@@ -1131,8 +1131,8 @@ impl ClientBuilder {
     /// Setting this to something like `/dev/null` is **NOT** recommended,
     /// jellyfin-rpc will upload the image every time you call `Client::set_activity()`
     /// if it can't find the image its looking for in the cache.
-    pub fn imgur_urls_file_location<T: Into<String>>(&mut self, location: T) -> &mut Self {
-        self.imgur_urls_file_location = location.into();
+    pub fn imgbb_urls_file_location<T: Into<String>>(&mut self, location: T) -> &mut Self {
+        self.imgbb_urls_file_location = location.into();
         self
     }
 
@@ -1171,7 +1171,7 @@ impl ClientBuilder {
         headers.insert("X-Emby-Token", self.api_key.parse()?);
 
         Ok(Client {
-            discord_ipc_client: DiscordIpcClient::new(&self.client_id)?,
+            discord_ipc_client: DiscordIpcClient::new(&self.api_token)?,
             url: self.url.parse()?,
             reqwest: reqwest::blocking::Client::builder()
                 .default_headers(headers)
@@ -1199,10 +1199,10 @@ impl ClientBuilder {
             },
             show_paused: self.show_paused,
             show_images: self.show_images,
-            imgur_options: ImgurOptions {
-                enabled: self.use_imgur,
-                client_id: self.imgur_client_id,
-                urls_location: self.imgur_urls_file_location,
+            imgbb_options: ImgBBOptions {
+                enabled: self.use_imgbb,
+                api_token: self.imgbb_api_token,
+                urls_location: self.imgbb_urls_file_location,
             },
             large_image_text: self.large_image_text,
         })

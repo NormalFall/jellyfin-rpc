@@ -25,7 +25,7 @@ struct Args {
     #[arg(
         short = 'i',
         long = "image-urls-file",
-        help = "Path to image urls file for imgur"
+        help = "Path to image urls file for imgbb"
     )]
     image_urls: Option<String>,
     #[arg(
@@ -98,9 +98,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .episode_prefix(conf.jellyfin.append_prefix)
         .show_paused(conf.discord.show_paused)
         .show_images(conf.images.enable_images)
-        .use_imgur(conf.images.imgur_images)
+        .use_imgbb(conf.images.imgbb_images)
         .large_image_text(format!("Jellyfin-RPC v{}", VERSION.unwrap_or("UNKNOWN")))
-        .imgur_urls_file_location(args.image_urls.unwrap_or(get_urls_path()?));
+        .imgbb_urls_file_location(args.image_urls.unwrap_or(get_urls_path()?));
 
     if let Some(display) = conf.jellyfin.music.display {
         debug!("Found config.jellyfin.music.display");
@@ -153,7 +153,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Some(application_id) = conf.discord.application_id {
         debug!("Found config.discord.application_id");
-        builder.client_id(application_id);
+        builder.api_token(application_id);
     }
 
     if let Some(buttons) = conf.discord.buttons {
@@ -161,9 +161,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         builder.buttons(buttons);
     }
 
-    if let Some(client_id) = conf.imgur.client_id {
-        debug!("Found config.imgur.client_id");
-        builder.imgur_client_id(client_id);
+    if let Some(api_token) = conf.imgbb.api_token {
+        debug!("Found config.imgbb.api_token");
+        builder.imgbb_api_token(api_token);
     }
 
     debug!("Building client");

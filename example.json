@@ -35,11 +35,11 @@
         ],
         "show_paused": true
     },
-    "imgur": {
-        "client_id": "asdjdjdg394209fdjs093"
+    "imgbb": {
+        "api_token": "asdjdjdg394209fdjs093"
     },
     "images": {
         "enable_images": true,
-        "imgur_images": true
+        "imgbb_images": true
     }
 }

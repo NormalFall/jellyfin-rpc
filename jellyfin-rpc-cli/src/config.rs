@@ -13,8 +13,8 @@ pub struct Config {
     pub jellyfin: Jellyfin,
     /// Discord configuration.
     pub discord: Discord,
-    /// Imgur configuration.
-    pub imgur: Imgur,
+    /// ImgBB configuration.
+    pub imgbb: ImgBB,
     /// Images configuration.
     pub images: Images,
 }
@@ -68,8 +68,8 @@ pub struct Discord {
 pub struct Images {
     /// Enables images, not everyone wants them so its a toggle.
     pub enable_images: bool,
-    /// Enables imgur images.
-    pub imgur_images: bool,
+    /// Enables imgbb images.
+    pub imgbb_images: bool,
 }
 
 impl Config {
@@ -83,7 +83,7 @@ impl Config {
 pub struct ConfigBuilder {
     pub jellyfin: JellyfinBuilder,
     pub discord: Option<DiscordBuilder>,
-    pub imgur: Option<Imgur>,
+    pub imgbb: Option<ImgBB>,
     pub images: Option<ImagesBuilder>,
 }
 
@@ -144,20 +144,20 @@ pub struct DiscordBuilder {
     pub show_paused: Option<bool>,
 }
 
-/// Imgur configuration
+/// ImgBB configuration
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub struct Imgur {
-    /// Contains the client ID used to upload images to imgur.
-    pub client_id: Option<String>,
+pub struct ImgBB {
+    /// Contains the api token used to upload images to imgbb.
+    pub api_token: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct ImagesBuilder {
     pub enable_images: Option<bool>,
-    pub imgur_images: Option<bool>,
+    pub imgbb_images: Option<bool>,
 }
 
-/// Find urls.json in filesystem, used to store images that were already previously uploaded to imgur.
+/// Find urls.json in filesystem, used to store images that were already previously uploaded to imgbb.
 ///
 /// This is to avoid the user having to specify a filepath on launch.
 ///
@@ -221,7 +221,7 @@ impl ConfigBuilder {
                 add_divider: Some(false),
             },
             discord: None,
-            imgur: None,
+            imgbb: None,
             images: None,
         }
     }
@@ -329,23 +329,23 @@ impl ConfigBuilder {
             show_paused = true;
         }
 
-        let client_id;
+        let api_token;
 
-        if let Some(imgur) = self.imgur {
-            client_id = imgur.client_id;
+        if let Some(imgbb) = self.imgbb {
+            api_token = imgbb.api_token;
         } else {
-            client_id = None
+            api_token = None
         }
 
         let enable_images;
-        let imgur_images;
+        let imgbb_images;
 
         if let Some(images) = self.images {
             enable_images = images.enable_images.unwrap_or(false);
-            imgur_images = images.imgur_images.unwrap_or(false);
+            imgbb_images = images.imgbb_images.unwrap_or(false);
         } else {
             enable_images = false;
-            imgur_images = false;
+            imgbb_images = false;
         }
 
         let url;
@@ -387,10 +387,10 @@ impl ConfigBuilder {
                 buttons,
                 show_paused,
             },
-            imgur: Imgur { client_id },
+            imgbb: ImgBB { api_token },
             images: Images {
                 enable_images,
-                imgur_images,
+                imgbb_images,
             },
         }
     }

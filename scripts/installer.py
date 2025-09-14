@@ -213,19 +213,19 @@ if not use_existing:
     print("----------Images----------")
     images = confirm(message="Do you want images?", default=False)
     if images:
-        imgur_images = confirm("Do you want imgur images?", default=False, direct=True)
-        if imgur_images:
-            client_id = input("Enter your imgur client id: ")
-            imgur = {"client_id": client_id}
+        imgbb_images = confirm("Do you want imgbb images?", default=False, direct=True)
+        if imgbb_images:
+            api_token = input("Enter your imgbb api token: ")
+            imgbb = {"api_token": api_token}
         else:
-            imgur = None
+            imgbb = None
 
         images = {
             "enable_images": True,
-            "imgur_images": imgur_images,
+            "imgbb_images": imgbb_images,
         }
     else:
-        imgur = None
+        imgbb = None
         images = None
 
     discord = {"application_id": appid, "buttons": buttons, "show_paused": show_paused}
@@ -233,7 +233,7 @@ if not use_existing:
     config = {
         "jellyfin": jellyfin,
         "discord": discord,
-        "imgur": imgur,
+        "imgbb": imgbb,
         "images": images,
     }
 
