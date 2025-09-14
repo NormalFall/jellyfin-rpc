@@ -16,7 +16,7 @@ use crate::{Client, JfResult};
 struct ImageUrl {
     id: String,
     url: String,
-    expiration_unix: usize,
+    expiration_from_unix_seconds: usize,
 }
 
 impl ImageUrl {
@@ -24,12 +24,12 @@ impl ImageUrl {
         Self {
             id: id.into(),
             url: url.into(),
-            expiration_unix: expiration.into()
+            expiration_from_unix_seconds: expiration.into()
         }
     }
 
     fn expiration_as_duration(&self) -> Duration {
-        Duration::from_secs(self.expiration_unix as u64)
+        Duration::from_secs(self.expiration_from_unix_seconds as u64)
     }
 }
 
@@ -122,7 +122,7 @@ fn upload(client: &Client) -> JfResult<Url> {
 
     let form = reqwest::blocking::multipart::Form::new()
         .part("image", reqwest::blocking::multipart::Part::bytes(image_bytes.to_vec())
-        .file_name("test.jpg"));
+        .file_name("jellyfin"));
 
     let res: ImgBBResponse = imgbb_client
         .post(format!("https://api.imgbb.com/1/upload?expiration={}&key={}", client.imgbb_options.expiration, client.imgbb_options.api_token))
