@@ -1,5 +1,6 @@
+use colored::Colorize;
 use jellyfin_rpc::{Button, DisplayFormat, MediaType};
-use log::debug;
+use log::{debug, warn};
 use serde::{Deserialize, Serialize};
 use std::env;
 
@@ -90,7 +91,7 @@ pub struct ConfigBuilder {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct JellyfinBuilder {
     pub url: String,
-    pub api_key: String,
+    pub api_key: Option<String>, // Option since you can overwrite it with a key file
     pub username: Username,
     pub music: Option<DisplayOptionsBuilder>,
     pub movies: Option<DisplayOptionsBuilder>,
@@ -206,13 +207,21 @@ pub fn get_config_path() -> Result<String, Box<dyn std::error::Error>> {
     }
 }
 
+pub enum ConfigBuilderLoaderError {
+    InvalidJellyfinKeyPath,
+    InvalidImgBBKeyPath,
+    InvalidConfigPath,
+    InvalidConfig,
+    MissingJellyfinKey
+}
+
 impl ConfigBuilder {
     fn new() -> Self {
         Self {
             jellyfin: JellyfinBuilder {
                 url: "".to_string(),
                 username: Username::String("".to_string()),
-                api_key: "".to_string(),
+                api_key: None,
                 music: None,
                 movies: None,
                 episodes: None,
@@ -228,12 +237,51 @@ impl ConfigBuilder {
         }
     }
 
-    /// Loads the config from the given path.
-    pub fn load(self, path: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        debug!("Config path is: {}", path);
+    /// Loads the config from the given paths.
+    pub fn load(self, config_path: &str, jellyfin_key_path: &Option<String>, imgbb_key_path: &Option<String>) -> Result<Self, ConfigBuilderLoaderError> {
+        debug!("Config path is: {}", config_path);
 
-        let data = std::fs::read_to_string(path)?;
-        let config = serde_json::from_str(&data)?;
+        let config_data = std::fs::read_to_string(config_path)
+            .map_err(|_| ConfigBuilderLoaderError::InvalidConfigPath)?;
+        let mut config: ConfigBuilder = serde_json::from_str(&config_data)
+            .map_err(|_| ConfigBuilderLoaderError::InvalidConfig)?;
+
+        if let Some(p) = jellyfin_key_path {
+            debug!("Jellyfin key path is: {}", p);
+            let key_data = std::fs::read_to_string(p)
+                .map_err(|_| ConfigBuilderLoaderError::InvalidJellyfinKeyPath)?
+                .trim()
+                .to_string();
+
+            if config.jellyfin.api_key.is_some() {
+                warn!("{}", "Overwriting Jellyfin key from config!".yellow().bold());
+            }
+
+            config.jellyfin.api_key = Some(key_data);
+        }
+
+        if let Some(p) = imgbb_key_path {
+            debug!("ImgBB key path is: {}", p);
+            let key_data = std::fs::read_to_string(p)
+                .map_err(|_| ConfigBuilderLoaderError::InvalidImgBBKeyPath)?
+                .trim()
+                .to_string();
+
+            match &mut config.imgbb {
+                Some(imgbb) => {
+                    if imgbb.api_token.is_some() {
+                        warn!("{}", "Overwriting ImgBB key from config!".yellow().bold());
+                    }
+
+                    imgbb.api_token = Some(key_data)
+                },
+                None => config.imgbb = Some(ImgBB { api_token: Some(key_data), expiration: None })
+            }
+        }
+
+        if config.jellyfin.api_key.is_none() {
+            return Err(ConfigBuilderLoaderError::MissingJellyfinKey);
+        }
 
         debug!("Config loaded successfully");
 
@@ -364,7 +412,7 @@ impl ConfigBuilder {
         Config {
             jellyfin: Jellyfin {
                 url,
-                api_key: self.jellyfin.api_key,
+                api_key: self.jellyfin.api_key.unwrap_or("".to_string()),
                 username,
                 music: DisplayOptions {
                     display: music_display,

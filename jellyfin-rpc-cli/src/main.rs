@@ -7,6 +7,7 @@ use retry::retry_with_index;
 use simple_logger::SimpleLogger;
 use std::{thread::sleep, time::Duration};
 use time::macros::format_description;
+
 mod config;
 #[cfg(feature = "updates")]
 mod updates;
@@ -22,6 +23,10 @@ mod updates;
 struct Args {
     #[arg(short = 'c', long = "config", help = "Path to the config file")]
     config: Option<String>,
+    #[arg(short = 'j', long = "jellyfin", help = "Path to jellyfin's key file")]
+    jellyfin: Option<String>,
+    #[arg(short = 'a', long = "imgbb", help = "Path to imgbb's key file")]
+    imgbb: Option<String>,
     #[arg(
         short = 'i',
         long = "image-urls-file",
@@ -69,18 +74,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .config
         .unwrap_or(get_config_path().expect("default config path couldn't be determined"));
 
-    let conf = match Config::builder().load(conf_path) {
+
+    let conf = match Config::builder().load(conf_path, &args.jellyfin, &args.imgbb) {
         Ok(file) => file.build(),
         Err(error) => {
-            error!(
-                "Config file could not be loaded at path: {}",
-                conf_path.red()
-            );
-            error!("{}", error);
-            error!(
-                "Please create a proper config file: {}",
-                "https://github.com/Radiicall/jellyfin-rpc/wiki/Setup".green()
-            );
+            error!("{}", "Failed to load configuration!".red().bold());
+            match error {
+                config::ConfigBuilderLoaderError::InvalidConfig => {
+                    error!("{}", "The configuration file contains invalid syntax or values.".red().bold());
+                },
+                config::ConfigBuilderLoaderError::InvalidConfigPath => {
+                    error!("{}", format!(
+                        "The configuration path `{}` is invalid or inaccessible.",
+                        conf_path
+                    ).red().bold());
+                },
+                config::ConfigBuilderLoaderError::InvalidJellyfinKeyPath => {
+                    error!("{}", format!(
+                        "The Jellyfin API key path `{}` is invalid or inaccessible.",
+                        args.jellyfin.unwrap_or_default()
+                    ).red().bold());
+                },
+                config::ConfigBuilderLoaderError::InvalidImgBBKeyPath => {
+                    error!("{}", format!(
+                        "The ImgBB API key path `{}` is invalid or inaccessible.",
+                        args.imgbb.unwrap_or_default()
+                    ).red().bold());
+                },
+                config::ConfigBuilderLoaderError::MissingJellyfinKey => {
+                    error!("{}", "Jellyfin API key is required but was not provided.".red().bold());
+                },
+            }
             std::process::exit(1)
         }
     };
