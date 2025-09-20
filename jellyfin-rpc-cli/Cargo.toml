@@ -17,7 +17,6 @@ name = "jellyfin-rpc"
 path = "src/main.rs"
 
 [features]
-default = ["updates"]
 updates = ["dep:reqwest"]
 
 [dependencies]
