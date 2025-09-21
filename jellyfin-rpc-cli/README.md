@@ -58,7 +58,11 @@ services.jellyfin-rpc = {
 };
 ```
 ### Separate Secret Files
-
+If for some reason you need to store API keys in a separate file from the config:
+```bash
+jellyfin-rpc -a /path/to/imgbb_api_key.secret
+jellyfin-rpc -j /path/to/jellyfin_api_key.secret
+```
 
 ### TODO
 
