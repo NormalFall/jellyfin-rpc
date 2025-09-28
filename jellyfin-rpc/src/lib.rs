@@ -39,6 +39,13 @@ pub struct Client {
     show_images: bool,
     imgbb_options: ImgBBOptions,
     large_image_text: String,
+    default_episode_image: String,
+    default_movie_image: String,
+    default_tv_image: String,
+    default_music_image: String,
+    default_book_image: String,
+    default_audio_book_image: String,
+    pause_icon_image: String,
 }
 
 impl Client {
@@ -128,11 +135,18 @@ impl Client {
 
             let mut activity = Activity::new();
 
-            let mut image_url = Url::from_str("https://i.imgur.com/oX6vcds.png")?;
+            let mut image_url;
 
-            if session.now_playing_item.media_type == MediaType::LiveTv {
-                image_url = Url::from_str("https://i.imgur.com/XxdHOqm.png")?;
-            } else if self.imgbb_options.enabled && self.show_images {
+            match session.now_playing_item.media_type {
+                MediaType::Episode | MediaType::None => image_url = Url::from_str(&self.default_episode_image)?,
+                MediaType::Movie => image_url = Url::from_str(&self.default_movie_image)?,
+                MediaType::LiveTv => image_url = Url::from_str(&self.default_tv_image)?,
+                MediaType::Music => image_url = Url::from_str(&self.default_music_image)?,
+                MediaType::Book => image_url = Url::from_str(&self.default_book_image)?,
+                MediaType::AudioBook => image_url = Url::from_str(&self.default_audio_book_image)?,
+            }
+
+            if self.imgbb_options.enabled && self.show_images {
                 if let Ok(imgbb_url) = external::imgbb::get_image(self) {
                     image_url = imgbb_url;
                 } else {
@@ -159,7 +173,7 @@ impl Client {
                 PlayTime::None => (),
                 PlayTime::Paused if self.show_paused => {
                     assets = assets
-                        .small_image("https://i.imgur.com/wlHSvYy.png")
+                        .small_image(&self.pause_icon_image)
                         .small_text("Paused");
                 }
                 PlayTime::Paused => return Ok(String::new()),
@@ -926,6 +940,14 @@ pub struct ClientBuilder {
     imgbb_image_expiration: usize,
     imgbb_urls_file_location: String,
     large_image_text: String,
+    default_image: String,
+    pause_icon_image: String,
+    default_episode_image: Option<String>,
+    default_movie_image: Option<String>,
+    default_tv_image: Option<String>,
+    default_music_image: Option<String>,
+    default_audio_book_image: Option<String>,
+    default_book_image: Option<String>,
 }
 
 impl ClientBuilder {
@@ -945,6 +967,8 @@ impl ClientBuilder {
             }),
             show_paused: true,
             imgbb_image_expiration: 432000, // 5 days
+            default_image: "https://i.imgur.com/oX6vcds.png".to_string(),
+            pause_icon_image: "https://i.imgur.com/wlHSvYy.png".to_string(),
             ..Default::default()
         }
     }
@@ -1101,6 +1125,72 @@ impl ClientBuilder {
         self
     }
 
+    /// Must have show_paused = true
+    /// Changes the image used for the paused status icon
+    /// 
+    /// Default is `https://i.imgur.com/wlHSvYy.png`
+    pub fn pause_image(&mut self, img: String) -> &mut Self {
+        self.pause_icon_image = img;
+        self
+    }
+
+    /// Image used for discord activity by default
+    /// It is also used when a requests fails
+    /// 
+    /// Default is `https://i.imgur.com/oX6vcds.png`
+    pub fn default_image(&mut self, img: String) -> &mut Self {
+        self.default_image = img;
+        self
+    }
+
+    /// Overrides the default image for [MediaType::Episode]
+    /// 
+    /// Default is `None`
+    pub fn episode_image(&mut self, img: Option<String>) -> &mut Self {
+        self.default_episode_image = img;
+        self
+    }
+
+    /// Overrides the default image for [MediaType::Movie]
+    /// 
+    /// Default is `None`
+    pub fn movie_image(&mut self, img: Option<String>) -> &mut Self {
+        self.default_movie_image = img;
+        self
+    }
+
+    /// Overrides the default image for [MediaType::LiveTv]
+    /// 
+    /// Default is `None`
+    pub fn tv_image(&mut self, img: Option<String>) -> &mut Self {
+        self.default_tv_image = img;
+        self
+    }
+
+    /// Overrides the default image for [MediaType::Music]
+    /// 
+    /// Default is `None`
+    pub fn music_image(&mut self, img: Option<String>) -> &mut Self {
+        self.default_music_image = img;
+        self
+    }
+
+    /// Overrides the default image for [MediaType::AudioBook]
+    /// 
+    /// Default is `None`
+    pub fn audio_book_image(&mut self, img: Option<String>) -> &mut Self {
+        self.default_audio_book_image = img;
+        self
+    }
+
+    /// Overrides the default image for [MediaType::Book]
+    /// 
+    /// Default is `None`
+    pub fn book_image(&mut self, img: Option<String>) -> &mut Self {
+        self.default_book_image = img;
+        self
+    }
+
     /// Show images from jellyfin on the activity.
     ///
     /// Defaults to `false`.
@@ -1181,6 +1271,49 @@ impl ClientBuilder {
         );
         headers.insert("X-Emby-Token", self.api_key.parse()?);
 
+        let default_episode_image;
+        let default_movie_image;
+        let default_tv_image;
+        let default_music_image;
+        let default_audio_book_image;
+        let default_book_image;
+
+        if let Some(url) = self.default_episode_image {
+            default_episode_image = url;
+        } else {
+            default_episode_image = self.default_image.clone();
+        }
+
+        if let Some(url) = self.default_movie_image {
+            default_movie_image = url;
+        } else {
+            default_movie_image = self.default_image.clone();
+        }
+
+        if let Some(url) = self.default_tv_image {
+            default_tv_image = url;
+        } else {
+            default_tv_image = self.default_image.clone();
+        }
+
+        if let Some(url) = self.default_music_image {
+            default_music_image = url;
+        } else {
+            default_music_image = self.default_image.clone();
+        }
+
+        if let Some(url) = self.default_audio_book_image {
+            default_audio_book_image = url;
+        } else {
+            default_audio_book_image = self.default_image.clone();
+        }
+
+        if let Some(url) = self.default_book_image {
+            default_book_image = url;
+        } else {
+            default_book_image = self.default_image.clone();
+        }
+
         Ok(Client {
             discord_ipc_client: DiscordIpcClient::new(&self.api_token)?,
             url: self.url.parse()?,
@@ -1217,6 +1350,13 @@ impl ClientBuilder {
                 urls_location: self.imgbb_urls_file_location,
             },
             large_image_text: self.large_image_text,
+            pause_icon_image: self.pause_icon_image,
+            default_episode_image,
+            default_movie_image,
+            default_tv_image,
+            default_music_image,
+            default_audio_book_image,
+            default_book_image,
         })
     }
 }

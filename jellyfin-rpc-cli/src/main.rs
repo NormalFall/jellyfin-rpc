@@ -121,6 +121,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .episode_divider(conf.jellyfin.add_divider)
         .episode_prefix(conf.jellyfin.append_prefix)
         .show_paused(conf.discord.show_paused)
+        .episode_image(conf.images.episode_image)
+        .movie_image(conf.images.movie_image)
+        .tv_image(conf.images.tv_image)
+        .music_image(conf.images.music_image)
+        .audio_book_image(conf.images.audio_book_image)
+        .book_image(conf.images.book_image)
         .show_images(conf.images.enable_images)
         .use_imgbb(conf.images.imgbb_images)
         .large_image_text(format!("Jellyfin-RPC v{}", VERSION.unwrap_or("UNKNOWN")))
@@ -183,6 +189,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(buttons) = conf.discord.buttons {
         debug!("Found config.discord.buttons");
         builder.buttons(buttons);
+    }
+
+    if let Some(img) = conf.images.pause_icon_image {
+        debug!("Found config.images.pause_image");
+        builder.pause_image(img);
+    }
+
+    if let Some(img) = conf.images.default_image {
+        debug!("Found config.images.default_image");
+        builder.default_image(img);
     }
 
     if let Some(api_token) = conf.imgbb.api_token {

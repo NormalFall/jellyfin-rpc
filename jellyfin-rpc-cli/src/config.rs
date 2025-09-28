@@ -67,6 +67,22 @@ pub struct Discord {
 /// Images configuration
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Images {
+    /// Url for the pause status icon
+    pub pause_icon_image: Option<String>,
+    /// image url that is displayed when enable_images is disabled or when API fails
+    pub default_image: Option<String>,
+    /// Override the default image when media is an episode
+    pub episode_image: Option<String>,
+    /// Override the default image when media is a movie
+    pub movie_image: Option<String>,
+    /// Override the default image when media is live tv
+    pub tv_image: Option<String>,
+    /// Override the default image when media is music
+    pub music_image: Option<String>,
+    /// Override the default image when media is an audio book
+    pub audio_book_image: Option<String>,
+    /// Override the default image when media is a book
+    pub book_image: Option<String>,
     /// Enables images, not everyone wants them so its a toggle.
     pub enable_images: bool,
     /// Enables imgbb images.
@@ -156,6 +172,14 @@ pub struct ImgBB {
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct ImagesBuilder {
+    pub pause_icon_image: Option<String>,
+    pub default_image: Option<String>,
+    pub episode_image: Option<String>,
+    pub movie_image: Option<String>,
+    pub tv_image: Option<String>,
+    pub music_image: Option<String>,
+    pub audio_book_image: Option<String>,
+    pub book_image: Option<String>,
     pub enable_images: Option<bool>,
     pub imgbb_images: Option<bool>,
 }
@@ -390,13 +414,37 @@ impl ConfigBuilder {
             expiration = None;
         }
 
+        let pause_icon_image;
+        let default_image;
+        let episode_image;
+        let movie_image;
+        let tv_image;
+        let music_image;
+        let audio_book_image;
+        let book_image;
         let enable_images;
         let imgbb_images;
 
         if let Some(images) = self.images {
+            pause_icon_image = images.pause_icon_image;
+            default_image = images.default_image;
+            episode_image = images.episode_image;
+            movie_image = images.movie_image;
+            tv_image = images.tv_image;
+            music_image = images.music_image;
+            audio_book_image = images.audio_book_image;
+            book_image = images.book_image;
             enable_images = images.enable_images.unwrap_or(false);
             imgbb_images = images.imgbb_images.unwrap_or(false);
         } else {
+            pause_icon_image = None;
+            default_image = None;
+            episode_image = None;
+            movie_image = None;
+            tv_image = None;
+            music_image = None;
+            audio_book_image = None;
+            book_image = None;
             enable_images = false;
             imgbb_images = false;
         }
@@ -445,6 +493,14 @@ impl ConfigBuilder {
                 expiration
             },
             images: Images {
+                pause_icon_image,
+                default_image,
+                episode_image,
+                movie_image,
+                tv_image,
+                music_image,
+                audio_book_image,
+                book_image,
                 enable_images,
                 imgbb_images,
             },
