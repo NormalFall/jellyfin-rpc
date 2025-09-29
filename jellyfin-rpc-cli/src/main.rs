@@ -1,7 +1,7 @@
 use clap::Parser;
 use colored::Colorize;
 use config::{get_config_path, get_urls_path, Config};
-use jellyfin_rpc::{Client, DisplayFormat, EpisodeDisplayOptions, VERSION};
+use jellyfin_rpc::{Client, DisplayFormat, EpisodeDisplayOptions};
 use log::{debug, error, info};
 use retry::retry_with_index;
 use simple_logger::SimpleLogger;
@@ -129,7 +129,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .book_image(conf.images.book_image)
         .show_images(conf.images.enable_images)
         .use_imgbb(conf.images.imgbb_images)
-        .large_image_text(format!("Jellyfin-RPC v{}", VERSION.unwrap_or("UNKNOWN")))
+        .large_image_text(conf.discord.image_text)
         .imgbb_urls_file_location(args.image_urls.unwrap_or(get_urls_path()?));
 
     if let Some(display) = conf.jellyfin.music.display {

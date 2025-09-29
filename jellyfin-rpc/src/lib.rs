@@ -162,10 +162,6 @@ impl Client {
 
             let mut assets = Assets::new().large_image(image_url.as_str());
 
-            if !self.large_image_text.is_empty() {
-                assets = assets.large_text(&self.large_image_text);
-            }
-
             let mut timestamps = Timestamps::new();
 
             match session.get_time()? {
@@ -213,7 +209,7 @@ impl Client {
             let mut image_text = self.get_image_text();
 
             if image_text.is_empty() {
-                image_text = format!("Jellyfin-RPC v{}", VERSION.unwrap_or("UNKNOWN"));
+                image_text = self.large_image_text.clone();
             }
 
             if image_text.len() > 128 {
@@ -810,7 +806,6 @@ pub struct DisplayFormat {
 impl From<Vec<String>> for DisplayFormat {
     fn from(items: Vec<String>) -> Self {
         let details_text = "{__default}".to_string();
-        let image_text = "Jellyfin-RPC v{version}".to_string();
         let mut state_text = "{__default}".to_string();
 
         let items_joined = items
@@ -826,7 +821,7 @@ impl From<Vec<String>> for DisplayFormat {
         DisplayFormat {
             details_text: Some(details_text),
             state_text: Some(state_text),
-            image_text: Some(image_text),
+            image_text: Some("".to_string()),
         }
     }
 }
@@ -861,12 +856,11 @@ impl From<EpisodeDisplayOptions> for DisplayFormat {
                 format!("{}{}{} {}", season_tag, divider, episode_tag, "{title}")
             }
         };
-        let image_text = "Jellyfin-RPC v{version}".to_string();
 
         DisplayFormat {
             details_text: Some(details_text),
             state_text: Some(state_text),
-            image_text: Some(image_text),
+            image_text: Some("".to_string()),
         }
     }
 }

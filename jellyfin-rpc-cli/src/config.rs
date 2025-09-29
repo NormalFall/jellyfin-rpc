@@ -1,5 +1,5 @@
 use colored::Colorize;
-use jellyfin_rpc::{Button, DisplayFormat, MediaType};
+use jellyfin_rpc::{Button, DisplayFormat, MediaType, VERSION};
 use log::{debug, warn};
 use serde::{Deserialize, Serialize};
 use std::env;
@@ -62,6 +62,8 @@ pub struct Discord {
     pub buttons: Option<Vec<Button>>,
     /// Show status when media is paused
     pub show_paused: bool,
+    /// Text when mouse hovers status image
+    pub image_text: String,
 }
 
 /// Images configuration
@@ -159,6 +161,7 @@ pub struct DiscordBuilder {
     pub application_id: Option<String>,
     pub buttons: Option<Vec<Button>>,
     pub show_paused: Option<bool>,
+    pub image_text: Option<String>,
 }
 
 /// ImgBB configuration
@@ -392,11 +395,15 @@ impl ConfigBuilder {
         let application_id;
         let buttons;
         let show_paused;
+        let mut image_text = format!("tests{}", VERSION.unwrap_or("UNKNOWN"));
 
         if let Some(discord) = self.discord {
             application_id = discord.application_id;
             buttons = discord.buttons;
-            show_paused = discord.show_paused.unwrap_or(true)
+            show_paused = discord.show_paused.unwrap_or(true);
+            if let Some(text) = discord.image_text {
+                image_text = text;
+            }
         } else {
             application_id = None;
             buttons = None;
@@ -487,6 +494,7 @@ impl ConfigBuilder {
                 application_id,
                 buttons,
                 show_paused,
+                image_text,
             },
             imgbb: ImgBB {
                 api_token,
