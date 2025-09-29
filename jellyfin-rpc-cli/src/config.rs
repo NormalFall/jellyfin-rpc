@@ -402,7 +402,8 @@ impl ConfigBuilder {
             buttons = discord.buttons;
             show_paused = discord.show_paused.unwrap_or(true);
             if let Some(text) = discord.image_text {
-                image_text = text;
+                image_text = text
+                    .replace("{version}", VERSION.unwrap_or("UNKNOWN"));
             }
         } else {
             application_id = None;
